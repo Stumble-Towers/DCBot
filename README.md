@@ -71,7 +71,33 @@ Extends `commands.Bot`. The three key parts:
 Each cog is a `commands.Cog` subclass in its own file. Cogs group related commands and listeners together. They are loaded dynamically by `setup_hook` — adding a cog is just two lines.
 
 ### `utils/` — Shared logic
-Anything that isn't a command but is used by commands lives here: API wrappers, helper functions, constants. Keeps cogs thin and testable.
+The `utils/` folder is for code that **supports** your cogs but isn't a command itself. The rule of thumb: if two or more cogs would need the same function, it belongs in `utils/`.
+
+Common things that live here:
+
+- **API wrappers** — async functions that call external services (YouTube, Spotify, weather APIs, etc.). Keeps HTTP logic out of your cog files.
+- **Helper functions** — formatting numbers, parsing strings, building embeds, calculating timestamps.
+- **Constants** — colour codes, emoji maps, rate limit values, shared configuration that multiple cogs reference.
+- **Validators** — input checking logic (e.g. is this a valid URL? is this number in range?) so cogs stay readable.
+
+#### Example
+
+Instead of writing the same HTTP call in three different cogs:
+
+```python
+# utils/youtube_api.py
+async def get_channel_info(channel_query: str) -> dict | None:
+    ...
+```
+
+Any cog can then import and use it cleanly:
+
+```python
+# cogs/youtube.py
+from utils.youtube_api import get_channel_info
+```
+
+This keeps cogs thin, makes utilities easy to test in isolation, and means you only need to update API logic in one place.
 
 ***
 
