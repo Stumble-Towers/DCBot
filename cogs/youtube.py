@@ -28,7 +28,7 @@ class YouTube(commands.Cog):
         """
         # Defer immediately so we have up to 15 min to respond.
         await interaction.response.defer(ephemeral=True)
-
+        
         try:
             channel_data = await get_channel_info(channel)
         except ValueError as e:
