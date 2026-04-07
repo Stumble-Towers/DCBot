@@ -268,7 +268,7 @@ class Check(commands.Cog):
             if shorts_data else "YouTube Data API v3",
         )
 
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=False)
 
 
 async def setup(bot: commands.Bot):
