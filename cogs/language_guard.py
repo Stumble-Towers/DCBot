@@ -79,6 +79,7 @@ class LanguageGuard(commands.Cog):
                 return
 
             await message.delete()
+            print(f"[LG] Deleted message from {message.author} ({message.author.id}) in #{message.channel.name} | lang={detected} | content={repr(message.content)}")
 
             if detected == "de":
                 embed = self._error_embed(
@@ -104,6 +105,7 @@ class LanguageGuard(commands.Cog):
                 return
 
             await message.delete()
+            print(f"[LG] Deleted message from {message.author} ({message.author.id}) in #{message.channel.name} | lang={detected} | content={repr(message.content)}")
 
             if detected == "en":
                 embed = self._error_embed(
