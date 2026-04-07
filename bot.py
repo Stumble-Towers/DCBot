@@ -14,6 +14,7 @@ class DiscordBot(commands.Bot):
     async def setup_hook(self):
         """Called automatically before the bot logs in — loads cogs and syncs slash commands."""
         await self.load_extension("cogs.check")
+        await self.load_extension("cogs.language_guard")
         synced = await self.tree.sync()
         print(f"[Bot] Synced {len(synced)} slash command(s).")
 
