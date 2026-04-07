@@ -78,6 +78,8 @@ class LanguageGuard(commands.Cog):
         async with aiohttp.ClientSession() as session:
             detected = await self._detect_language(session, message.content)
 
+        print(f"[LG] Detected: {detected}")
+
         channel_id = message.channel.id
 
         # ── English channel ──────────────────────────────────────────────
