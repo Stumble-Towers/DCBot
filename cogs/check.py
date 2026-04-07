@@ -95,7 +95,7 @@ class Check(commands.Cog):
         description="Check your YouTube tier on this server.",
     )
     async def check(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=False)
         user = interaction.user
 
         # ── 1. OAuth token check ─────────────────────────────────────────────
@@ -124,7 +124,7 @@ class Check(commands.Cog):
 
             # Store the message so we can edit it in-place
             status_msg = await interaction.followup.send(
-                embed=link_embed, view=link_view, ephemeral=True
+                embed=link_embed, view=link_view, ephemeral=False
             )
 
             # Poll until the OAuth callback writes the token
@@ -171,7 +171,7 @@ class Check(commands.Cog):
             if status_msg:
                 await status_msg.edit(embed=err, view=None)
             else:
-                await interaction.followup.send(embed=err, ephemeral=True)
+                await interaction.followup.send(embed=err, ephemeral=False)
             return
 
         # ── 3. Channel info (subs, total views, etc.) ────────────────────────
@@ -180,13 +180,13 @@ class Check(commands.Cog):
         except ValueError as e:
             await interaction.followup.send(
                 embed=discord.Embed(title="⚙️ Config Error", description=str(e), color=discord.Color.orange()),
-                ephemeral=True,
+                ephemeral=False,
             )
             return
         except Exception as e:
             await interaction.followup.send(
                 embed=discord.Embed(title="❌ YouTube API Error", description=f"`{e}`", color=discord.Color.red()),
-                ephemeral=True,
+                ephemeral=False,
             )
             return
 
@@ -197,7 +197,7 @@ class Check(commands.Cog):
                     description=f"No channel found for **{handle}**.",
                     color=discord.Color.yellow(),
                 ),
-                ephemeral=True,
+                ephemeral=False,
             )
             return
 
