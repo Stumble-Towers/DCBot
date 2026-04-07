@@ -63,6 +63,7 @@ class LanguageGuard(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
+        print(f"[LG] on_message fired | author={message.author} | channel={message.channel.id} | content={repr(message.content)}")
         # Ignore bots and messages outside the watched channels
         if message.author.bot:
             return
@@ -71,6 +72,8 @@ class LanguageGuard(commands.Cog):
         # Skip messages with no detectable text (images-only, stickers, etc.)
         if not message.content.strip():
             return
+
+        print(f"[LG] Passed guards, detecting language...")
 
         async with aiohttp.ClientSession() as session:
             detected = await self._detect_language(session, message.content)
