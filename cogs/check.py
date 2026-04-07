@@ -8,7 +8,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from utils.oauth_store import get_token
-from utils.youtube_api import get_channel_info, YOUTUBE_API_KEY  # export your key from there
+from utils.youtube_api import get_channel_info, get_shorts_stats
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -58,78 +58,6 @@ async def _fetch_youtube_handle(access_token: str) -> str | None:
             return f"@{conn['name']}"
     return None
 
-
-async def _fetch_shorts_stats(channel_id: str) -> dict | None:
-    """
-    Returns:
-        {"avg_views": float, "per_week": float, "sample": int}
-    or None if no shorts are found / API error.
-
-    Strategy:
-      1. search.list  → up to 50 recent video IDs          (cost: 100 units)
-      2. videos.list  → contentDetails + statistics         (cost: 1 unit)
-      3. Filter duration ≤ 60 s  →  these are Shorts
-      4. avg_views over all found shorts
-      5. per_week  = shorts uploaded in the last 4 weeks / 4
-    """
-    base = "https://www.googleapis.com/youtube/v3"
-    async with aiohttp.ClientSession() as session:
-
-        # Step 1 — recent video IDs
-        async with session.get(f"{base}/search", params={
-            "part":      "id",
-            "channelId": channel_id,
-            "type":      "video",
-            "order":     "date",
-            "maxResults": 50,
-            "key":       YOUTUBE_API_KEY,
-        }) as r:
-            if r.status != 200:
-                return None
-            search_data = await r.json()
-
-        video_ids = [item["id"]["videoId"] for item in search_data.get("items", [])]
-        if not video_ids:
-            return None
-
-        # Step 2 — duration + stats
-        async with session.get(f"{base}/videos", params={
-            "part": "contentDetails,statistics,snippet",
-            "id":   ",".join(video_ids),
-            "key":  YOUTUBE_API_KEY,
-        }) as r:
-            if r.status != 200:
-                return None
-            video_data = await r.json()
-
-    # Step 3 — filter Shorts (≤ 60 s)
-    shorts = []
-    for v in video_data.get("items", []):
-        secs = _iso_duration_to_seconds(
-            v.get("contentDetails", {}).get("duration", "PT999S")
-        )
-        if secs <= 60:
-            shorts.append({
-                "views":     int(v.get("statistics", {}).get("viewCount", 0)),
-                "published": v.get("snippet", {}).get("publishedAt", ""),
-            })
-
-    if not shorts:
-        return None
-
-    # Step 4 — average views
-    avg_views = sum(s["views"] for s in shorts) / len(shorts)
-
-    # Step 5 — shorts per week (last 4 weeks)
-    cutoff = datetime.now(timezone.utc) - timedelta(weeks=4)
-    recent_count = sum(
-        1 for s in shorts
-        if s["published"] and
-        datetime.fromisoformat(s["published"].replace("Z", "+00:00")) >= cutoff
-    )
-    per_week = recent_count / 4.0
-
-    return {"avg_views": avg_views, "per_week": per_week, "sample": len(shorts)}
 
 
 def _evaluate_tier(subs: int, avg_views: float, per_week: float) -> dict | None:
@@ -283,7 +211,7 @@ class Check(commands.Cog):
         channel_url   = f"https://www.youtube.com/channel/{channel_id}"
 
         # ── 4. Shorts stats ──────────────────────────────────────────────────
-        shorts_data = await _fetch_shorts_stats(channel_id)
+        shorts_data = await get_shorts_stats(channel_id)
         avg_views   = shorts_data["avg_views"] if shorts_data else 0.0
         per_week    = shorts_data["per_week"]  if shorts_data else 0.0
 
