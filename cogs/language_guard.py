@@ -22,7 +22,6 @@ class LanguageGuard(commands.Cog):
     # ------------------------------------------------------------------ #
 
     async def _detect_language(self, session: aiohttp.ClientSession, text: str) -> str | None:
-        """Returns the ISO 639-1 language code (e.g. 'en', 'de') or None on failure."""
         headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
@@ -32,11 +31,11 @@ class LanguageGuard(commands.Cog):
                 if resp.status != 200:
                     return None
                 data = await resp.json()
-                detections = data.get("data", {}).get("detections", [])
-                if not detections:
+                if not isinstance(data, list) or not data:
                     return None
-                return detections[0].get("language")
-        except aiohttp.ClientError:
+                return data[0].get("language")
+        except Exception as e:
+            print(f"[LG] API exception: {type(e).__name__}: {e}")
             return None
 
     @staticmethod
@@ -51,7 +50,6 @@ class LanguageGuard(commands.Cog):
 
     @staticmethod
     async def _dm_user(user: discord.Member | discord.User, embed: discord.Embed) -> None:
-        """Attempt to DM the user; silently skip if they block DMs."""
         try:
             await user.send(embed=embed)
         except discord.Forbidden:
@@ -63,32 +61,22 @@ class LanguageGuard(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        print(f"[LG] on_message fired | author={message.author} | channel={message.channel.id} | content={repr(message.content)}")
-        # Ignore bots and messages outside the watched channels
         if message.author.bot:
             return
         if message.channel.id not in WATCHED_CHANNELS:
             return
-        # Skip messages with no detectable text (images-only, stickers, etc.)
         if not message.content.strip():
             return
 
-        print(f"[LG] Passed guards, detecting language...")
-
-        try:
-            async with aiohttp.ClientSession() as session:
-                detected = await self._detect_language(session, message.content)
-            print(f"[LG] Detected: {detected}")
-        except Exception as e:
-            print(f"[LG] EXCEPTION: {type(e).__name__}: {e}")
-        return
+        async with aiohttp.ClientSession() as session:
+            detected = await self._detect_language(session, message.content)
 
         channel_id = message.channel.id
 
         # ── English channel ──────────────────────────────────────────────
         if channel_id == EN_CHANNEL_ID:
             if detected == "en":
-                return  # ✅ Correct language — nothing to do
+                return
 
             await message.delete()
 
@@ -113,7 +101,7 @@ class LanguageGuard(commands.Cog):
         # ── German channel ───────────────────────────────────────────────
         elif channel_id == DE_CHANNEL_ID:
             if detected == "de":
-                return  # ✅ Correct language — nothing to do
+                return
 
             await message.delete()
 
