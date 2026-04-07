@@ -75,10 +75,13 @@ class LanguageGuard(commands.Cog):
 
         print(f"[LG] Passed guards, detecting language...")
 
+            try:
         async with aiohttp.ClientSession() as session:
             detected = await self._detect_language(session, message.content)
-
         print(f"[LG] Detected: {detected}")
+    except Exception as e:
+        print(f"[LG] EXCEPTION: {type(e).__name__}: {e}")
+        return
 
         channel_id = message.channel.id
 
